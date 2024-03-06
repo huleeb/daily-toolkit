@@ -18,12 +18,12 @@ class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
     def execute(self, context):
         current_state = bpy.context.preferences.inputs.use_rotate_around_active
         
-        if current_state:
+        bpy.context.preferences.inputs.use_rotate_around_active = not current_state
+        
+        if not current_state:
             self.report({'INFO'}, 'Toggle Orbit Around Selection: ON')
         else:
             self.report({'INFO'}, 'Toggle Orbit Around Selection: OFF')
-        
-        bpy.context.preferences.inputs.use_rotate_around_active = not current_state
         return {'FINISHED'}
     
 

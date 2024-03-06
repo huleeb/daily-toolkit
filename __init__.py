@@ -6,7 +6,7 @@ bl_info = {
     "name": "StupidGiant Toolkit",
     "author": "huleeb",
     "blender": (4, 0, 0),
-    "version": (0, 0, 1),
+    "version": (0, 0, 2),
     "category": "3D View"
 }
 

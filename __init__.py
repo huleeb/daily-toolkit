@@ -1,5 +1,6 @@
 import bpy
 import rna_keymap_ui
+from . import addon_updater_ops
 
 bl_info = {
     "name": "StupidGiant Toolkit",
@@ -16,7 +17,12 @@ class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
 
     def execute(self, context):
         current_state = bpy.context.preferences.inputs.use_rotate_around_active
-        print("Toggle Orbit Around Selection: ", not current_state)
+        
+        if current_state:
+            self.report({'INFO'}, 'Toggle Orbit Around Selection: ON')
+        else:
+            self.report({'INFO'}, 'Toggle Orbit Around Selection: OFF')
+        
         bpy.context.preferences.inputs.use_rotate_around_active = not current_state
         return {'FINISHED'}
     
@@ -43,11 +49,15 @@ classes = (
 )
 
 def register():
+    addon_updater_ops.register(bl_info)
+
     for cls in classes:
+        addon_updater_ops.make_annotations(cls)
         bpy.utils.register_class(cls)
     register_keymap()
     
 def unregister():
+    addon_updater_ops.unregister()
     for cls in classes:
         bpy.utils.unregister_class(cls)
     unregister_keymaps()

@@ -66,6 +66,7 @@ class EasyDecimate(bpy.types.Operator):
 addon_keymaps = []
 
 # Addon preference panel
+@addon_updater_ops.make_annotations
 class AddonPreference(bpy.types.AddonPreferences):
 	bl_idname = __name__
     
@@ -139,6 +140,7 @@ def register():
     addon_updater_ops.register(bl_info)
 
     for cls in classes:
+        addon_updater_ops.make_annotations(cls)
         bpy.utils.register_class(cls)
     register_keymap()
     

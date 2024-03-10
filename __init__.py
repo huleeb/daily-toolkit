@@ -3,12 +3,68 @@ import rna_keymap_ui
 from . import addon_updater_ops
 
 bl_info = {
-    "name": "StupidGiant Toolkit",
-    "author": "huleeb",
+    "name": "Daily Toolkit",
+    "author": "huleeb & stupidgiant",
     "blender": (4, 0, 0),
     "version": (0, 0, 3),
-    "category": "3D View"
+    "location": "View3D > Tools > daily",
+    "category": "Generic",
+    "description": "utility functions to speed up workflow"
 }
+
+#TODO:
+#   - feature to swtich aspect ration i.e. 4:5 -> 5:4 and vice versa
+#       x = y
+#       y = x
+#
+#	- when mouse is over modifier window 
+#   	have shortcuts specific:
+#		- ctrl-m for mask modifier and create Vertex Group 'Group'
+#	- Toggle with F2 'Black and White' ColorRamp from compositor
+#
+#
+#
+#
+#
+#
+
+def disable_outline_options():
+    for area in bpy.context.screen.areas:
+        if area.type == 'OUTLINER':
+            space = area.spaces.active
+
+            space.show_restrict_column_viewport = False
+            space.show_restrict_select = False
+
+def execute_outliner_filter_restricted():
+    for area in bpy.context.screen.areas:
+        if area.type == 'OUTLINER':
+            space = area.spaces.active
+
+            space.show_restrict_column_viewport = False
+            space.show_restrict_column_select = False
+
+
+class DAILY_PT_toolkit_panel(bpy.types.Panel):
+    bl_label = "daily"
+    bl_idname = "DAILY_PT_toolkit_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'daily'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("toolkit.outliner_filter_restricted")
+        layout.operator("toolkit.material_setting_to_bump_only")
+
+class outliner_filter_restricted(bpy.types.Operator):
+    """Removes Viewport and Selectable restricted filters in outliner"""
+    bl_label = "Outliner Filter"
+    bl_idname = "toolkit.outliner_filter_restricted"
+
+    def execute(self, context):
+        execute_outliner_filter_restricted()
+        return {'FINISHED'}
 
 class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
     """Toggle Orbit Around Selection"""
@@ -62,6 +118,33 @@ class EasyDecimate(bpy.types.Operator):
 			new_obj.visible_shadow = False
 		return {'FINISHED'}
 
+class material_setting_to_bump_only(bpy.types.Operator):
+    bl_label = "Bump Only"
+    bl_idname = "toolkit.material_setting_to_bump_only"
+
+    def set_material_displacement_to_bump_only(material):
+        if material.use_nodes:
+            principled_bsdf = material.node_tree.nodes.get("Principled BSDF")
+            if principled_bsdf:
+                material.cycles.displacement_method = 'BUMP'
+                
+                # Remove existing displacement node if any
+                # displacement_node = None
+                # for node in material.node_tree.nodes:
+                #     if node.type == 'DISPLACEMENT':
+                #         displacement_node = node
+                #         break
+                # if displacement_node:
+                #     material.node_tree.nodes.remove(displacement_node)
+    
+    def execute(self, context):
+        for obj in bpy.data.objects:
+            if obj.type == 'MESH' and obj.data.materials:
+                for material_slot in obj.material_slots:
+                    if material_slot.material:
+                        material_setting_to_bump_only.set_material_displacement_to_bump_only(material_slot.material)
+        self.report({'INFO'}, 'Set all material displacement method to: Bump')
+        return {'FINISHED'}
 
 addon_keymaps = []
 
@@ -133,7 +216,10 @@ classes = (
 	AddonPreference,
 	UpdaterPanel,
     ToggleOrbitAroundSelectionOperator,
-    EasyDecimate
+    EasyDecimate,
+    DAILY_PT_toolkit_panel,
+    material_setting_to_bump_only,
+    outliner_filter_restricted
 )
 
 def register():

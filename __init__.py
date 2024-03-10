@@ -13,10 +13,6 @@ bl_info = {
 }
 
 #TODO:
-#   - feature to swtich aspect ration i.e. 4:5 -> 5:4 and vice versa
-#       x = y
-#       y = x
-#
 #	- when mouse is over modifier window 
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
@@ -44,19 +40,6 @@ def execute_outliner_filter_restricted():
             space.show_restrict_column_viewport = False
             space.show_restrict_column_select = False
 
-
-class DAILY_PT_toolkit_panel(bpy.types.Panel):
-    bl_label = "daily"
-    bl_idname = "DAILY_PT_toolkit_panel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'daily'
-
-    def draw(self, context):
-        layout = self.layout
-        layout.operator("toolkit.outliner_filter_restricted")
-        layout.operator("toolkit.material_setting_to_bump_only")
-
 class outliner_filter_restricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
     bl_label = "Outliner Filter"
@@ -64,6 +47,18 @@ class outliner_filter_restricted(bpy.types.Operator):
 
     def execute(self, context):
         execute_outliner_filter_restricted()
+        return {'FINISHED'}
+
+class flip_aspect_ratio(bpy.types.Operator):
+    """Toggles aspect ratio between portrait to landscape"""
+    bl_label = "Flip Aspect Ratio"
+    bl_idname = "toolkit.flip_aspect_ratio"
+
+    def execute(self, context):
+        x = bpy.context.scene.render.resolution_x
+        y = bpy.context.scene.render.resolution_y
+        bpy.context.scene.render.resolution_x = y
+        bpy.context.scene.render.resolution_y = x
         return {'FINISHED'}
 
 class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
@@ -211,6 +206,20 @@ class UpdaterPanel(bpy.types.Panel):
 		# Call built-in function with draw code/checks.
 		addon_updater_ops.update_notice_box_ui(self, context)
 
+class DAILY_PT_toolkit_panel(bpy.types.Panel):
+    bl_label = "daily"
+    bl_idname = "DAILY_PT_toolkit_panel"
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'daily'
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("toolkit.outliner_filter_restricted")
+        layout.operator("toolkit.material_setting_to_bump_only")
+        layout.operator("toolkit.flip_aspect_ratio")
+        layout.operator("toolkit.toggle_orbit")
+        layout.operator("toolkit.easy_decimate")
 
 classes = (
 	AddonPreference,
@@ -219,7 +228,8 @@ classes = (
     EasyDecimate,
     DAILY_PT_toolkit_panel,
     material_setting_to_bump_only,
-    outliner_filter_restricted
+    outliner_filter_restricted,
+    flip_aspect_ratio
 )
 
 def register():
@@ -254,8 +264,9 @@ def register_keymap():
 	# Every addon shortcuts:
     add_key_to_map(kc,config='3D View',cls='toolkit.toggle_orbit',key='X',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,config='3D View',cls='toolkit.easy_decimate',key='D',shift=True,alt=True,ctrl=True)
-    
-
+    add_key_to_map(kc,config='3D View',cls='toolkit.outliner_filter_restricted',key='K',shift=False,alt=False,ctrl=False)
+    add_key_to_map(kc,config='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,config='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
 
 def unregister_keymaps():
     for km, kmi in addon_keymaps:

@@ -88,39 +88,46 @@ class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
         return {'FINISHED'}
 
 class EasyDecimate(bpy.types.Operator):
-	"""Decimate and hide new object"""
-	bl_idname = "toolkit.easy_decimate"
-	bl_label = "Decimate and hide new object"
+    """Decimate and hide new object"""
+    bl_idname = "toolkit.easy_decimate"
+    bl_label = "Decimate and hide new object"
     
-	def execute(self, context):
-		if bpy.context.selected_objects:
-			obj = bpy.context.selected_objects[0]
+    def execute(self, context):
+        if bpy.context.selected_objects:
+            obj = bpy.context.selected_objects[0]
             
-			new_obj = obj.copy()
-			new_obj.name = obj.name + "_decimated"
-			new_obj.data = obj.data.copy()
-			bpy.context.collection.objects.link(new_obj)
+            new_obj = obj.copy()
+            new_obj.name = obj.name + "_decimated"
+            new_obj.data = obj.data.copy()
+            bpy.context.collection.objects.link(new_obj)
             
-			obj.parent = new_obj
-			obj.display_type = 'BOUNDS'
+            obj.parent = new_obj
+            obj.display_type = 'BOUNDS'
             
-			bpy.context.view_layer.objects.active = new_obj
+            # reset loc/rot of original obj, 
+            # if not, the object is offset by same amount on both values
+            obj.location = (0.0, 0.0, 0.0)
+            obj.rotation_euler = (0.0, 0.0, 0.0)
+
+            bpy.context.view_layer.objects.active = new_obj
             
-			mod_dec = new_obj.modifiers.new(type='DECIMATE', name='Decimate')
-			new_obj.modifiers["Decimate"].ratio = 0.1
-			bpy.ops.object.modifier_apply(modifier=mod_dec.name)
-			bpy.ops.object.mode_set(mode='EDIT')
-			bpy.ops.mesh.select_all(action='SELECT')
-			bpy.ops.uv.smart_project(angle_limit=66)
-			bpy.ops.object.mode_set(mode='OBJECT')
-			
-			new_obj.visible_camera = False
-			new_obj.visible_diffuse = False
-			new_obj.visible_glossy = False
-			new_obj.visible_transmission = False
-			new_obj.visible_volume_scatter = False
-			new_obj.visible_shadow = False
-		return {'FINISHED'}
+            mod_dec = new_obj.modifiers.new(type='DECIMATE', name='Decimate')
+            new_obj.modifiers["Decimate"].ratio = 0.1
+            bpy.ops.object.modifier_apply(modifier=mod_dec.name)
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.uv.smart_project(angle_limit=66)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.shade_smooth()
+            
+            new_obj.visible_camera = False
+            new_obj.visible_diffuse = False
+            new_obj.visible_glossy = False
+            new_obj.visible_transmission = False
+            new_obj.visible_volume_scatter = False
+            new_obj.visible_shadow = False
+        return {'FINISHED'}
+
 
 class MaterialSettingToBumpOnly(bpy.types.Operator):
     bl_label = "Bump Only"

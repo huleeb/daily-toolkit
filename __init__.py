@@ -13,20 +13,9 @@ bl_info = {
 }
 
 #TODO:
-#   - add undo feature in all classes
-#
 #	- when mouse is over modifier window 
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
-#	- Toggle with F2 'Black and White' ColorRamp from compositor
-#       - get last item from tree of compositor, if colorramp, toggle on/off?
-#
-#   - Fix EasyDecimate Rotation
-#        - When an object is not at center and rotated the low poly object doesn't match the original transform
-#
-#
-#
-#
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -91,6 +80,7 @@ class EasyDecimate(bpy.types.Operator):
     """Decimate and hide new object"""
     bl_idname = "toolkit.easy_decimate"
     bl_label = "Decimate and hide new object"
+    bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
         if bpy.context.selected_objects:
@@ -128,10 +118,10 @@ class EasyDecimate(bpy.types.Operator):
             new_obj.visible_shadow = False
         return {'FINISHED'}
 
-
 class MaterialSettingToBumpOnly(bpy.types.Operator):
     bl_label = "Bump Only"
     bl_idname = "toolkit.material_setting_to_bump_only"
+    bl_options = {'REGISTER', 'UNDO'}
 
     def set_material_displacement_to_bump_only(self,material):
         if material.use_nodes:
@@ -152,6 +142,7 @@ class ModifierMask(bpy.types.Operator):
     """Adds a Mask modifier to every selected object. Along with an empty Vertex Group"""
     bl_label = "Mask Modifier"
     bl_idname = "toolkit.modifier_mask" 
+    bl_options = {'REGISTER', 'UNDO'}
 
 #     if bpy.context.space_data.context == 'MODIFIER':
 # AttributeError: 'SpaceView3D' object has no attribute 'context'

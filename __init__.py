@@ -65,20 +65,26 @@ class FlipAspectRatio(bpy.types.Operator):
         bpy.context.scene.render.resolution_y = x
         return {'FINISHED'}
 
+is_orbit_around_selection = False
+
 class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
-    """Toggle Orbit Around Selection"""
+    """Orbit Around Selection"""
     bl_idname = "toolkit.toggle_orbit"
-    bl_label = "Toggle Orbit Around Selection"
+    bl_label = "Orbit Around Selection"
 
     def execute(self, context):
+        global is_orbit_around_selection
         current_state = bpy.context.preferences.inputs.use_rotate_around_active
         
         bpy.context.preferences.inputs.use_rotate_around_active = not current_state
+
+        is_orbit_around_selection = not is_orbit_around_selection
+        bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
         
         if not current_state:
-            self.report({'INFO'}, 'Toggle Orbit Around Selection: ON')
+            self.report({'INFO'}, 'Orbit Around Selection: ON')
         else:
-            self.report({'INFO'}, 'Toggle Orbit Around Selection: OFF')
+            self.report({'INFO'}, 'Orbit Around Selection: OFF')
         return {'FINISHED'}
 
 class EasyDecimate(bpy.types.Operator):
@@ -120,27 +126,18 @@ class MaterialSettingToBumpOnly(bpy.types.Operator):
     bl_label = "Bump Only"
     bl_idname = "toolkit.material_setting_to_bump_only"
 
-    def set_material_displacement_to_bump_only(material):
+    def set_material_displacement_to_bump_only(self,material):
         if material.use_nodes:
             principled_bsdf = material.node_tree.nodes.get("Principled BSDF")
             if principled_bsdf:
                 material.cycles.displacement_method = 'BUMP'
-                
-                # Remove existing displacement node if any
-                # displacement_node = None
-                # for node in material.node_tree.nodes:
-                #     if node.type == 'DISPLACEMENT':
-                #         displacement_node = node
-                #         break
-                # if displacement_node:
-                #     material.node_tree.nodes.remove(displacement_node)
     
     def execute(self, context):
         for obj in bpy.data.objects:
             if obj.type == 'MESH' and obj.data.materials:
                 for material_slot in obj.material_slots:
                     if material_slot.material:
-                        material_setting_to_bump_only.set_material_displacement_to_bump_only(material_slot.material)
+                        self.set_material_displacement_to_bump_only(material_slot.material)
         self.report({'INFO'}, 'Set all material displacement method to: Bump')
         return {'FINISHED'}
 
@@ -205,6 +202,7 @@ class ToggleGrayScale(bpy.types.Operator):
         else:
             grayscale_node.mute = not grayscale_node.mute
             is_gray_scale = not is_gray_scale
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
         return {'FINISHED'}
 
@@ -290,11 +288,11 @@ class DAILY_PT_toolkit_panel(bpy.types.Panel):
         layout.label(text="Viewport:")
         layout.operator("toolkit.material_setting_to_bump_only")
         layout.operator("toolkit.flip_aspect_ratio")
-        layout.operator("toolkit.toggle_orbit")
+        layout.operator("toolkit.toggle_orbit", depress=is_orbit_around_selection)
         layout.operator("toolkit.easy_decimate")
 
         layout.label(text="Compositor:")
-        layout.operator("toolkit.gray_scale",depress=is_gray_scale)
+        layout.operator("toolkit.gray_scale", depress=is_gray_scale)
         
         layout.label(text="Outliner:")
         layout.operator("toolkit.outliner_filter_restricted")

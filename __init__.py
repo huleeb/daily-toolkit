@@ -356,7 +356,7 @@ def register_keymap():
     add_key_to_map(kc,config='3D View',cls='toolkit.outliner_filter_restricted',key='K',shift=False,alt=False,ctrl=False)
     add_key_to_map(kc,config='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,config='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
-    add_key_to_map(kc,config='3D View',cls='toolkit.gray_scale',key='L',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,config='3D View',cls='toolkit.gray_scale',key='F2',shift=False,alt=False,ctrl=False)
 
 	# Properties shortcuts:
     #add_key_to_map(kc,config='Object Mode',space_type='EMPTY',cls='toolkit.modifier_mask',key='M',shift=False,alt=False,ctrl=True)

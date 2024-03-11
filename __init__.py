@@ -13,10 +13,13 @@ bl_info = {
 }
 
 #TODO:
+#   - add undo feature in all classes
+#
 #	- when mouse is over modifier window 
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
 #	- Toggle with F2 'Black and White' ColorRamp from compositor
+#       - get last item from tree of compositor, if colorramp, toggle on/off?
 #
 #
 #
@@ -76,7 +79,6 @@ class ToggleOrbitAroundSelectionOperator(bpy.types.Operator):
         else:
             self.report({'INFO'}, 'Toggle Orbit Around Selection: OFF')
         return {'FINISHED'}
-    
 
 class EasyDecimate(bpy.types.Operator):
 	"""Decimate and hide new object"""
@@ -141,7 +143,23 @@ class material_setting_to_bump_only(bpy.types.Operator):
         self.report({'INFO'}, 'Set all material displacement method to: Bump')
         return {'FINISHED'}
 
-addon_keymaps = []
+class modifier_mask(bpy.types.Operator):
+    """Adds a Mask modifier to every selected object. Along with an empty Vertex Group"""
+    bl_label = "Mask Modifier"
+    bl_idname = "toolkit.modifier_mask"
+
+    def execute(self, context):
+        if bpy.context.selected_objects:
+            if bpy.context.area == 'PROPERTIES':
+                for obj in bpy.context.selected_objects:
+                    bpy.context.view_layer.objects.active = obj
+                    bpy.ops.object.vertex_group_add()
+                    mod_dec = obj.modifiers.new(type='MASK', name='Mask')
+            bpy.ops.ed.undo_push()
+        return {'FINISHED'}
+
+addon_keymaps_view3d = []
+addon_keymaps_properties = []
 
 # Addon preference panel
 @addon_updater_ops.make_annotations
@@ -165,8 +183,12 @@ class AddonPreference(bpy.types.AddonPreferences):
 		wm = bpy.context.window_manager
 		kc = wm.keyconfigs.addon
 		if kc:
-			layout.label(text="Shortcuts:", icon='OPTIONS')
-			for km, kmi in addon_keymaps:
+			layout.label(text="Viewport:", icon='OPTIONS')
+			for km, kmi in addon_keymaps_view3d:
+				row = layout.row()
+				rna_keymap_ui.draw_kmi([], kc, km, kmi, row, 0)
+			layout.label(text="Properties:", icon='OPTIONS')
+			for km, kmi in addon_keymaps_properties:
 				row = layout.row()
 				rna_keymap_ui.draw_kmi([], kc, km, kmi, row, 0)
 
@@ -229,7 +251,8 @@ classes = (
     DAILY_PT_toolkit_panel,
     material_setting_to_bump_only,
     outliner_filter_restricted,
-    flip_aspect_ratio
+    flip_aspect_ratio,
+    modifier_mask
 )
 
 def register():
@@ -255,23 +278,33 @@ def add_key_to_map(kc,config='3D View',space_type='VIEW_3D',cls='',key='',action
     if km:
         km = kc.new(config, space_type=space_type)
     kmi = km.keymap_items.new(cls, key, action, shift=shift,alt=alt,ctrl=ctrl)
-    addon_keymaps.append((km, kmi))
+    if space_type == 'VIEW_3D':
+        addon_keymaps_view3d.append((km, kmi))
+    if space_type == 'PROPERTIES':
+        addon_keymaps_properties.append((km, kmi))
 
 def register_keymap():
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon.keymaps
     
-	# Every addon shortcuts:
+	# Viewport shortcuts:
     add_key_to_map(kc,config='3D View',cls='toolkit.toggle_orbit',key='X',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,config='3D View',cls='toolkit.easy_decimate',key='D',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,config='3D View',cls='toolkit.outliner_filter_restricted',key='K',shift=False,alt=False,ctrl=False)
     add_key_to_map(kc,config='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,config='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
 
+	# Properties shortcuts:
+    add_key_to_map(kc,config='Properties',space_type='PROPERTIES',cls='toolkit.modifier_mask',key='M',shift=False,alt=False,ctrl=True)
+
+
 def unregister_keymaps():
-    for km, kmi in addon_keymaps:
+    for km, kmi in addon_keymaps_view3d:
         km.keymap_items.remove(kmi)
-    addon_keymaps.clear()
+    addon_keymaps_view3d.clear()
+    for km, kmi in addon_keymaps_properties:
+        km.keymap_items.remove(kmi)
+    addon_keymaps_properties.clear()
 
 if __name__ == "__main__":
     register()

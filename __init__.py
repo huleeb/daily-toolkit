@@ -6,7 +6,7 @@ bl_info = {
     "name": "Daily Toolkit",
     "author": "huleeb & stupidgiant",
     "blender": (4, 0, 0),
-    "version": (0, 0, 5),
+    "version": (0, 1, 0),
     "location": "View3D > Tools > daily",
     "category": "Generic",
     "description": "utility functions to speed up workflow"
@@ -218,6 +218,7 @@ class AreaLightNoScatter(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.object.light_add(type='AREA', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.view3d.snap_selected_to_cursor(use_offset=False)
         bpy.context.object.visible_volume_scatter = False
         bpy.context.object.visible_volume_scatter = False
         bpy.context.object.data.shape = 'DISK'

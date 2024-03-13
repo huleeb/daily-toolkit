@@ -16,6 +16,8 @@ bl_info = {
 #	- when mouse is over modifier window 
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
+#   - EasyBake
+#   - Feature: Shift A - add menu - no volume scatter area light (disk shape)
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -91,14 +93,14 @@ class EasyDecimate(bpy.types.Operator):
             new_obj.data = obj.data.copy()
             bpy.context.collection.objects.link(new_obj)
             
+            # reset transform of original object to prevent offsets
+            obj.location = (0.0, 0.0, 0.0)
+            obj.rotation_euler = (0.0, 0.0, 0.0)
+            obj.scale = (1.0, 1.0, 1.0)
+            
             obj.parent = new_obj
             obj.display_type = 'BOUNDS'
             
-            # reset loc/rot of original obj, 
-            # if not, the object is offset by same amount on both values
-            obj.location = (0.0, 0.0, 0.0)
-            obj.rotation_euler = (0.0, 0.0, 0.0)
-
             bpy.context.view_layer.objects.active = new_obj
             
             mod_dec = new_obj.modifiers.new(type='DECIMATE', name='Decimate')
@@ -106,7 +108,8 @@ class EasyDecimate(bpy.types.Operator):
             bpy.ops.object.modifier_apply(modifier=mod_dec.name)
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.uv.smart_project(angle_limit=66)
+            bpy.ops.mesh.mark_seam(clear=False)
+            bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0)
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.shade_smooth()
             

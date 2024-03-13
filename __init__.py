@@ -35,6 +35,11 @@ def execute_outliner_filter_restricted():
             space.show_restrict_column_viewport = False
             space.show_restrict_column_select = False
 
+# add menu items
+def draw_menu(self, context):
+    layout = self.layout
+    layout.operator("toolkit.area_no_scatter", text="Area no scatter", icon='LIGHT_HEMI')
+
 class OutlinerFilterRestricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
     bl_label = "Outliner Filter"
@@ -207,6 +212,18 @@ class ToggleGrayScale(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class AreaLightNoScatter(bpy.types.Operator):
+    """Area light without volume scatter visibility"""
+    bl_idname = "toolkit.area_no_scatter"
+    bl_label = "Area Light Scatter"
+
+    def execute(self, context):
+        bpy.ops.object.light_add(type='AREA', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.context.object.visible_volume_scatter = False
+        bpy.context.object.visible_volume_scatter = False
+        bpy.context.object.data.shape = 'DISK'
+        return {'FINISHED'}
+
 addon_keymaps_view3d = []
 addon_keymaps_properties = []
 
@@ -309,11 +326,14 @@ classes = (
     OutlinerFilterRestricted,
     FlipAspectRatio,
     ModifierMask,
-    ToggleGrayScale
+    ToggleGrayScale,
+    AreaLightNoScatter
 )
 
 def register():
     addon_updater_ops.register(bl_info)
+
+    bpy.types.VIEW3D_MT_light_add.prepend(draw_menu)
 
     for cls in classes:
         addon_updater_ops.make_annotations(cls)
@@ -322,6 +342,9 @@ def register():
     
 def unregister():
     addon_updater_ops.unregister()
+
+    bpy.types.VIEW3D_MT_light_add.remove(draw_menu)
+
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)

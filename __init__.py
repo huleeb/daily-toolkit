@@ -16,6 +16,7 @@ bl_info = {
 #	- when mouse is over modifier window 
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
+#   - EasyBake
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -32,6 +33,11 @@ def execute_outliner_filter_restricted():
 
             space.show_restrict_column_viewport = False
             space.show_restrict_column_select = False
+
+# add menu items
+def draw_menu(self, context):
+    layout = self.layout
+    layout.operator("toolkit.area_no_scatter", text="Area no scatter", icon='LIGHT_HEMI')
 
 class OutlinerFilterRestricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
@@ -91,14 +97,14 @@ class EasyDecimate(bpy.types.Operator):
             new_obj.data = obj.data.copy()
             bpy.context.collection.objects.link(new_obj)
             
+            # reset transform of original object to prevent offsets
+            obj.location = (0.0, 0.0, 0.0)
+            obj.rotation_euler = (0.0, 0.0, 0.0)
+            obj.scale = (1.0, 1.0, 1.0)
+            
             obj.parent = new_obj
             obj.display_type = 'BOUNDS'
             
-            # reset loc/rot of original obj, 
-            # if not, the object is offset by same amount on both values
-            obj.location = (0.0, 0.0, 0.0)
-            obj.rotation_euler = (0.0, 0.0, 0.0)
-
             bpy.context.view_layer.objects.active = new_obj
             
             mod_dec = new_obj.modifiers.new(type='DECIMATE', name='Decimate')
@@ -106,7 +112,8 @@ class EasyDecimate(bpy.types.Operator):
             bpy.ops.object.modifier_apply(modifier=mod_dec.name)
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.select_all(action='SELECT')
-            bpy.ops.uv.smart_project(angle_limit=66)
+            bpy.ops.mesh.mark_seam(clear=False)
+            bpy.ops.uv.unwrap(method='ANGLE_BASED', margin=0)
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.shade_smooth()
             
@@ -202,6 +209,18 @@ class ToggleGrayScale(bpy.types.Operator):
             is_gray_scale = not is_gray_scale
             bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
 
+        return {'FINISHED'}
+
+class AreaLightNoScatter(bpy.types.Operator):
+    """Area light without volume scatter visibility"""
+    bl_idname = "toolkit.area_no_scatter"
+    bl_label = "Area Light Scatter"
+
+    def execute(self, context):
+        bpy.ops.object.light_add(type='AREA', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.context.object.visible_volume_scatter = False
+        bpy.context.object.visible_volume_scatter = False
+        bpy.context.object.data.shape = 'DISK'
         return {'FINISHED'}
 
 addon_keymaps_view3d = []
@@ -306,11 +325,14 @@ classes = (
     OutlinerFilterRestricted,
     FlipAspectRatio,
     ModifierMask,
-    ToggleGrayScale
+    ToggleGrayScale,
+    AreaLightNoScatter
 )
 
 def register():
     addon_updater_ops.register(bl_info)
+
+    bpy.types.VIEW3D_MT_light_add.prepend(draw_menu)
 
     for cls in classes:
         addon_updater_ops.make_annotations(cls)
@@ -319,6 +341,9 @@ def register():
     
 def unregister():
     addon_updater_ops.unregister()
+
+    bpy.types.VIEW3D_MT_light_add.remove(draw_menu)
+
     for cls in classes:
         try:
             bpy.utils.unregister_class(cls)

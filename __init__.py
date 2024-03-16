@@ -17,6 +17,14 @@ bl_info = {
 #   	have shortcuts specific:
 #		- ctrl-m for mask modifier and create Vertex Group 'Group'
 #   - EasyBake
+#   - Feature:
+#       - shortcut for mask modifier to selected object [0]
+#           - vertex group called 'mask'
+#           - add mask modifier and vertex group to 'mask'
+#           - go in edit mode
+#   - Custom plan
+#       - backdrop stupidgiant
+#   - shortcut to hide all visibility on selected objects
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -34,10 +42,15 @@ def execute_outliner_filter_restricted():
             space.show_restrict_column_viewport = False
             space.show_restrict_column_select = False
 
-# add menu items
-def draw_menu(self, context):
+# add light menu items
+def draw_light_menu(self, context):
     layout = self.layout
     layout.operator("toolkit.area_no_scatter", text="Area no scatter", icon='LIGHT_HEMI')
+
+# add mesh menu items
+def draw_mesh_menu(self, context):
+    layout = self.layout
+    layout.operator("toolkit.subdivplane", text="Subdivided Plane", icon='MESH_PLANE')
 
 class OutlinerFilterRestricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
@@ -224,6 +237,23 @@ class AreaLightNoScatter(bpy.types.Operator):
         bpy.context.object.data.shape = 'DISK'
         return {'FINISHED'}
 
+class AddSubDividedPlane(bpy.types.Operator):
+    """Add subdivided plane"""
+    bl_idname = "toolkit.subdivplane"
+    bl_label = "Subdivided Plane"
+
+    def execute(self, context):
+        bpy.ops.mesh.primitive_plane_add(size=10, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.subdivide(number_cuts=15)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.subdivision_set(level=1, relative=False)
+        bpy.ops.object.shade_smooth()
+
+        return {'FINISHED'}
+    
+
+
 addon_keymaps_view3d = []
 addon_keymaps_properties = []
 
@@ -327,13 +357,15 @@ classes = (
     FlipAspectRatio,
     ModifierMask,
     ToggleGrayScale,
-    AreaLightNoScatter
+    AreaLightNoScatter,
+    AddSubDividedPlane
 )
 
 def register():
     addon_updater_ops.register(bl_info)
 
-    bpy.types.VIEW3D_MT_light_add.prepend(draw_menu)
+    bpy.types.VIEW3D_MT_light_add.prepend(draw_light_menu)
+    bpy.types.VIEW3D_MT_mesh_add.prepend(draw_mesh_menu)
 
     for cls in classes:
         addon_updater_ops.make_annotations(cls)
@@ -343,7 +375,8 @@ def register():
 def unregister():
     addon_updater_ops.unregister()
 
-    bpy.types.VIEW3D_MT_light_add.remove(draw_menu)
+    bpy.types.VIEW3D_MT_light_add.remove(draw_light_menu)
+    bpy.types.VIEW3D_MT_mesh_add.remove(draw_mesh_menu)
 
     for cls in classes:
         try:

@@ -7,7 +7,7 @@ bl_info = {
     "name": "Daily Toolkit",
     "author": "huleeb & stupidgiant",
     "blender": (4, 0, 0),
-    "version": (0, 1, 0),
+    "version": (0, 2, 0),
     "location": "View3D > Tools > daily",
     "category": "Generic",
     "description": "utility functions to speed up workflow"

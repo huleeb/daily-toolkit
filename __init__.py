@@ -27,11 +27,7 @@ bl_info = {
 #       - backdrop stupidgiant
 #   - shortcut to hide all visibility on selected objects
 #
-#   - Save shortcut assign edit for user
-#
 #   - Shortcut to UV Cube unwrap
-#
-#   - Shortcut to toggle 250 X resolution (to center frame)
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -291,6 +287,22 @@ class AddBackDropPlane(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class CamCenterGuide(bpy.types.Operator):
+    bl_label = "Camera Center Guide"
+    bl_idname = "toolkit.camcenterguide"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        global cam_x_og
+        if bpy.context.scene.render.resolution_x is not 250:
+            cam_x_og = bpy.context.scene.render.resolution_x
+            bpy.context.scene.render.resolution_x = 250
+        else:
+            bpy.context.scene.render.resolution_x = cam_x_og
+        return {'FINISHED'}
+    
+
+
 addon_keymaps = []
 addon_keymaps_properties = []
 
@@ -321,7 +333,7 @@ class AddonPreference(bpy.types.AddonPreferences):
 		wm = bpy.context.window_manager
 		kc = wm.keyconfigs.user
 		if kc:
-			layout.label(text="Viewport:", icon='OPTIONS')
+			layout.label(text="Shortcuts:", icon='OPTIONS')
 			print(addon_keymaps)
 			for cat, km, kmi, idname in addon_keymaps:
 				km = kc.keymaps[cat]
@@ -401,7 +413,8 @@ classes = (
     ToggleGrayScale,
     AreaLightNoScatter,
     AddSubDividedPlane,
-    AddBackDropPlane
+    AddBackDropPlane,
+    CamCenterGuide
 )
 
 def register():
@@ -447,6 +460,7 @@ def register_keymap():
     add_key_to_map(kc,category='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,category='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,category='3D View',cls='toolkit.gray_scale',key='L',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.camcenterguide',key='C',shift=True,alt=True,ctrl=True)
 
 def unregister_keymaps():
     for cat, km, kmi, idname in addon_keymaps:

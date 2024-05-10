@@ -1,5 +1,6 @@
 import bpy
 import rna_keymap_ui
+import json
 from . import addon_updater_ops
 
 bl_info = {
@@ -25,6 +26,12 @@ bl_info = {
 #   - Custom plan
 #       - backdrop stupidgiant
 #   - shortcut to hide all visibility on selected objects
+#
+#   - Save shortcut assign edit for user
+#
+#   - Shortcut to UV Cube unwrap
+#
+#   - Shortcut to toggle 250 X resolution (to center frame)
 
 def disable_outline_options():
     for area in bpy.context.screen.areas:
@@ -51,6 +58,7 @@ def draw_light_menu(self, context):
 def draw_mesh_menu(self, context):
     layout = self.layout
     layout.operator("toolkit.subdivplane", text="Subdivided Plane", icon='MESH_PLANE')
+    layout.operator("toolkit.backdroplane", text="Backdrop Plane", icon='MESH_PLANE')
 
 class OutlinerFilterRestricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
@@ -244,6 +252,7 @@ class AddSubDividedPlane(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.mesh.primitive_plane_add(size=10, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.view3d.snap_selected_to_cursor(use_offset=False)
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.subdivide(number_cuts=15)
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -252,9 +261,37 @@ class AddSubDividedPlane(bpy.types.Operator):
 
         return {'FINISHED'}
     
+class AddBackDropPlane(bpy.types.Operator):
+    """Add backdrop plane"""
+    bl_idname = "toolkit.backdroplane"
+    bl_label = "Backdrop Plane"
 
+    def execute(self, context):
+        bpy.ops.mesh.primitive_plane_add(size=10, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.view3d.snap_selected_to_cursor(use_offset=False)
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='EDGE')
+        # bpy.ops.mesh.select_all(action='DESELECT')
 
-addon_keymaps_view3d = []
+        selected_edge = None
+        for edge in bpy.context.active_object.data.edges:
+            if (edge.vertices[0] == 0 and edge.vertices[1] == 1) or (edge.vertices[0] == 1 and edge.vertices[1] == 0):
+                edge.select = True
+                selected_edge = edge
+                break
+        
+        #bpy.ops.mesh.extrude_region_move(MESH_OT_extrude_region={"use_normal_flip":False, "use_dissolve_ortho_edges":False, "mirror":False}, TRANSFORM_OT_translate={"value":(0, 0, 10), "orient_type":'GLOBAL', "orient_matrix":((1, 0, 0), (0, 1, 0), (0, 0, 1)), "orient_matrix_type":'GLOBAL', "constraint_axis":(False, False, True), "mirror":False, "use_proportional_edit":False, "proportional_edit_falloff":'SMOOTH', "proportional_size":7.40025, "use_proportional_connected":False, "use_proportional_projected":False, "snap":False, "snap_elements":{'INCREMENT'}, "use_snap_project":False, "snap_target":'CLOSEST', "use_snap_self":True, "use_snap_edit":True, "use_snap_nonedit":True, "use_snap_selectable":False, "snap_point":(0, 0, 0), "snap_align":False, "snap_normal":(0, 0, 0), "gpencil_strokes":False, "cursor_transform":False, "texture_space":False, "remove_on_cancel":False, "use_duplicated_keyframes":False, "view2d_edge_pan":False, "release_confirm":False, "use_accurate":False, "alt_navigation":True, "use_automerge_and_split":False})
+        bpy.ops.mesh.extrude_region_move(TRANSFORM_OT_translate={"value":(0, 0, 10)})
+        bpy.ops.mesh.select_mode(use_extend=False, use_expand=False, type='VERT')
+        bpy.ops.object.modifier_add(type='BEVEL')
+        bpy.context.object.modifiers["Bevel"].width = 3
+        bpy.context.object.modifiers["Bevel"].segments = 15
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.shade_smooth()
+
+        return {'FINISHED'}
+
+addon_keymaps = []
 addon_keymaps_properties = []
 
 # Addon preference panel
@@ -270,22 +307,27 @@ class AddonPreference(bpy.types.AddonPreferences):
     
 	def draw(self, context):
 		layout = self.layout
-		# Works best if a column, or even just self.layout.
 		mainrow = layout.row()
 		col = mainrow.column()
 
+		def draw_keymap(category, idname):
+			km = kc.keymaps[category]
+			kmi = km.keymap_items[idname]
+			layout.context_pointer_set('keymap', km)
+			rna_keymap_ui.draw_kmi([], kc, km, kmi, right, 0)
+
 		addon_updater_ops.update_settings_ui(self, context)
-          
+
 		wm = bpy.context.window_manager
-		kc = wm.keyconfigs.addon
+		kc = wm.keyconfigs.user
 		if kc:
 			layout.label(text="Viewport:", icon='OPTIONS')
-			for km, kmi in addon_keymaps_view3d:
+			print(addon_keymaps)
+			for cat, km, kmi, idname in addon_keymaps:
+				km = kc.keymaps[cat]
+				kmi = km.keymap_items[idname]
 				row = layout.row()
-				rna_keymap_ui.draw_kmi([], kc, km, kmi, row, 0)
-			layout.label(text="Properties:", icon='OPTIONS')
-			for km, kmi in addon_keymaps_properties:
-				row = layout.row()
+				layout.context_pointer_set('keymap', km)
 				rna_keymap_ui.draw_kmi([], kc, km, kmi, row, 0)
 
 class UpdaterPanel(bpy.types.Panel):
@@ -358,7 +400,8 @@ classes = (
     ModifierMask,
     ToggleGrayScale,
     AreaLightNoScatter,
-    AddSubDividedPlane
+    AddSubDividedPlane,
+    AddBackDropPlane
 )
 
 def register():
@@ -385,38 +428,31 @@ def unregister():
              continue
     unregister_keymaps()
 
-# Function to easily create Custom Shortcut in the preference panel
-def add_key_to_map(kc,config='3D View',space_type='VIEW_3D',cls='',key='',action='PRESS',shift=False,alt=False,ctrl=False):
-    km = kc.get(config)
-    if km:
-        km = kc.new(config, space_type=space_type)
-    kmi = km.keymap_items.new(cls, key, action, shift=shift,alt=alt,ctrl=ctrl)
-    if space_type == 'VIEW_3D':
-        addon_keymaps_view3d.append((km, kmi))
-    if space_type == 'EMPTY':
-        addon_keymaps_properties.append((km, kmi))
 
 def register_keymap():
+    # Function to easily create Custom Shortcut in the preference panel
+    def add_key_to_map(kc,category='3D View',space_type='VIEW_3D',cls='',key='',action='PRESS',shift=False,alt=False,ctrl=False):
+        if kc:
+            kmi = km.keymap_items.new(cls, key, action, shift=shift, alt=alt, ctrl=ctrl)
+            addon_keymaps.append((category,km, kmi,cls))
+
     wm = bpy.context.window_manager
     kc = wm.keyconfigs.addon.keymaps
+    category = '3D View'
+    km = kc[category] if kc.get(category) else kc.new(name=category)
 
-	# Viewport shortcuts:
-    add_key_to_map(kc,config='3D View',cls='toolkit.toggle_orbit',key='X',shift=True,alt=True,ctrl=True)
-    add_key_to_map(kc,config='3D View',cls='toolkit.easy_decimate',key='D',shift=True,alt=True,ctrl=True)
-    add_key_to_map(kc,config='3D View',cls='toolkit.outliner_filter_restricted',key='K',shift=False,alt=False,ctrl=False)
-    add_key_to_map(kc,config='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
-    add_key_to_map(kc,config='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
-    add_key_to_map(kc,config='3D View',cls='toolkit.gray_scale',key='F2',shift=False,alt=False,ctrl=False)
-
-	# Properties shortcuts:
-    #add_key_to_map(kc,config='Object Mode',space_type='EMPTY',cls='toolkit.modifier_mask',key='M',shift=False,alt=False,ctrl=True)
-
+    add_key_to_map(kc,category='3D View',cls='toolkit.toggle_orbit',key='X',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.easy_decimate',key='D',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.outliner_filter_restricted',key='K',shift=False,alt=False,ctrl=False)
+    add_key_to_map(kc,category='3D View',cls='toolkit.material_setting_to_bump_only',key='B',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.gray_scale',key='L',shift=True,alt=True,ctrl=True)
 
 def unregister_keymaps():
-    for km, kmi in addon_keymaps_view3d:
+    for cat, km, kmi, idname in addon_keymaps:
         km.keymap_items.remove(kmi)
-    addon_keymaps_view3d.clear()
-    for km, kmi in addon_keymaps_properties:
+    addon_keymaps.clear()
+    for cat, km, kmi, idname in addon_keymaps_properties:
         km.keymap_items.remove(kmi)
     addon_keymaps_properties.clear()
 

@@ -1,6 +1,7 @@
 import bpy
 import rna_keymap_ui
 import json
+import yaml
 from . import addon_updater_ops
 
 bl_info = {

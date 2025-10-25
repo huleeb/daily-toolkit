@@ -535,6 +535,7 @@ def register_keymap():
     add_key_to_map(kc,category='3D View',cls='toolkit.flip_aspect_ratio',key='P',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,category='3D View',cls='toolkit.gray_scale',key='L',shift=True,alt=True,ctrl=True)
     add_key_to_map(kc,category='3D View',cls='toolkit.camcenterguide',key='C',shift=True,alt=True,ctrl=True)
+    add_key_to_map(kc,category='3D View',cls='toolkit.fog_cube',key='F',shift=True,alt=True,ctrl=True)
 
 def unregister_keymaps():
     for cat, km, kmi, idname in addon_keymaps:

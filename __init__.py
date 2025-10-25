@@ -506,6 +506,7 @@ def unregister():
 
     bpy.types.VIEW3D_MT_light_add.remove(draw_light_menu)
     bpy.types.VIEW3D_MT_mesh_add.remove(draw_mesh_menu)
+    bpy.types.VIEW3D_MT_volume_add.prepend(draw_volume_menu)
 
     for cls in classes:
         try:

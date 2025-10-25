@@ -55,6 +55,11 @@ def draw_mesh_menu(self, context):
     layout = self.layout
     layout.operator("toolkit.subdivplane", text="Subdivided Plane", icon='MESH_PLANE')
     layout.operator("toolkit.backdroplane", text="Backdrop Plane", icon='MESH_PLANE')
+    
+
+def draw_volume_menu(self, context):
+    layout = self.layout
+    layout.operator("toolkit.fog_cube", text="Fog Cube", icon='SNAP_VOLUME')
 
 class OutlinerFilterRestricted(bpy.types.Operator):
     """Removes Viewport and Selectable restricted filters in outliner"""
@@ -301,7 +306,73 @@ class CamCenterGuide(bpy.types.Operator):
             bpy.context.scene.render.resolution_x = cam_x_og
         return {'FINISHED'}
     
+class FogCube(bpy.types.Operator):
+    """Add fog cube using default node shader"""
+    bl_idname = "toolkit.fog_cube"
+    bl_label = "Fog Cube"
 
+    def execute(self, context):
+        bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        bpy.ops.view3d.snap_selected_to_cursor(use_offset=False)
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.transform.translate(value=(0, 0, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=True, use_snap_edit=True, use_snap_nonedit=True, use_snap_selectable=False)
+        bpy.ops.object.editmode_toggle()
+
+        cube = bpy.context.active_object
+        mesh = cube.data
+
+        # deselect all
+        for i in mesh.polygons:
+            i.select=False
+        for i in mesh.edges:
+            i.select=False
+        for i in mesh.vertices:
+            i.select=False
+        
+        # top face
+        minZ = float('inf')
+        maxZ = float('inf') * -1
+        for face in mesh.polygons:
+            Z = face.center[2]
+            if Z < minZ:
+                minZ = Z
+                bottom_face = face
+            if Z > maxZ:
+                maxZ = Z
+                top_face = face
+        top_face.select = True
+        
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.transform.resize(value=(69.5371, 69.5371, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, True, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=True, use_snap_edit=True, use_snap_nonedit=True, use_snap_selectable=False)
+        bpy.ops.transform.translate(value=(0, 0, 29.1039), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(False, False, True), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=True, use_snap_edit=True, use_snap_nonedit=True, use_snap_selectable=False)
+        bpy.ops.object.editmode_toggle()
+
+        # deselect all
+        for i in mesh.polygons:
+            i.select=False
+        for i in mesh.edges:
+            i.select=False
+        for i in mesh.vertices:
+            i.select=False
+
+        # bottom top face
+        minZ = float('inf')
+        for face in mesh.polygons:
+            Z = face.center[2]
+            if Z < minZ:
+                minZ = Z
+                bottom_face = face
+
+        bottom_face.select = True
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.transform.resize(value=(69.5371, 69.5371, 1), orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, True, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False, snap=False, snap_elements={'INCREMENT'}, use_snap_project=False, snap_target='CLOSEST', use_snap_self=True, use_snap_edit=True, use_snap_nonedit=True, use_snap_selectable=False)
+        bpy.ops.object.editmode_toggle()
+
+        bpy.context.object.display_type = 'BOUNDS'
+        bpy.context.object.name = "VOLUME"
+
+        cube.data.materials.append(bpy.data.materials.get("VOLUME"))
+        return {'FINISHED'}
 
 addon_keymaps = []
 addon_keymaps_properties = []
@@ -414,7 +485,8 @@ classes = (
     AreaLightNoScatter,
     AddSubDividedPlane,
     AddBackDropPlane,
-    CamCenterGuide
+    CamCenterGuide,
+    FogCube
 )
 
 def register():
@@ -422,6 +494,7 @@ def register():
 
     bpy.types.VIEW3D_MT_light_add.prepend(draw_light_menu)
     bpy.types.VIEW3D_MT_mesh_add.prepend(draw_mesh_menu)
+    bpy.types.VIEW3D_MT_volume_add.prepend(draw_volume_menu)
 
     for cls in classes:
         addon_updater_ops.make_annotations(cls)

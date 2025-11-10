@@ -156,7 +156,7 @@ class MaterialSettingToBumpOnly(bpy.types.Operator):
         if material.use_nodes:
             principled_bsdf = material.node_tree.nodes.get("Principled BSDF")
             if principled_bsdf:
-                material.cycles.displacement_method = 'BUMP'
+                material.displacement_method = 'BUMP'
     
     def execute(self, context):
         for obj in bpy.data.objects:
